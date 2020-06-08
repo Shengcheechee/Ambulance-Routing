@@ -4,7 +4,6 @@ import numpy as np
 import cv2
 
 def parser(filename):
-
     tree = ET.parse(filename)
     root = tree.getroot()
 
@@ -17,8 +16,7 @@ def parser(filename):
         lon = int(lon * 100000 + 0.5)
 
         trafsig = False
-        if node.find('tag') != None:
-            if node.find('tag').get('v') == "traffic_signals":
+        if node.find('tag') != None and node.find('tag').get('v') == "traffic_signals":
                 trafsig = True
 
         node_info = {
@@ -34,10 +32,11 @@ def parser(filename):
         way_mem = []
         lane = 1
         oneway = 0
+        priority = ""
 
         for tag in way.findall('tag'):
-
             if (tag.get('k') == "highway" and tag.get('v') not in {"path", "footway", "steps", "pedestrian"}):
+                priority = tag.get('v')
                 for nd in way.findall('nd'):
                     way_mem.append(nd.get('ref'))
                     nodes[nd.get('ref')]['belonged_ways'].add(way.get('id'))
@@ -52,12 +51,11 @@ def parser(filename):
                     oneway = -1
 
         if way_mem:
-            ways[way.get('id')] = (way_mem, lane, oneway)
+            ways[way.get('id')] = (way_mem, lane, oneway, priority)
 
     return nodes, ways
 
 def render(nodes, ways, sp, path):
-
     lon_min_id = min(nodes.keys(), key = lambda nid: nodes[nid]['position'][0])
     lon_max_id = max(nodes.keys(), key = lambda nid: nodes[nid]['position'][0])
     lat_min_id = min(nodes.keys(), key = lambda nid: nodes[nid]['position'][1])
@@ -74,12 +72,10 @@ def render(nodes, ways, sp, path):
     img.fill(250)
 
     for way in ways.keys():
-
         nd_tmp = ""
         start = False
 
         for nd in ways[way][0]:
-
             if nd_tmp == "":
                 nd_tmp = nd
 
@@ -106,7 +102,6 @@ def render(nodes, ways, sp, path):
 
 
     for i in range(len(path)):
-
         shortest_path = []
 
         if ways[path[i]][0].index(sp[i + 1]) > ways[path[i]][0].index(sp[i]):
