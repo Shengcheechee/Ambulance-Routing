@@ -12,7 +12,7 @@ def converter(nodes, ways):
             graph_nodes.append(node)
 
     osm_graph = nx.DiGraph()
-    osm_graph.add_nodes_from (graph_nodes)
+    osm_graph.add_nodes_from(graph_nodes)
     for way in ways.keys():
         nd_tmp = ""
         for nd in ways[way][0]:
@@ -44,7 +44,6 @@ def shortest_path(nx_graph, s, t):
     sp = nx.shortest_path(nx_graph, source = s, target = t)
 
     path = []
-
     for i in range(len(sp)-1):
         path.append(nx_graph.get_edge_data(sp[i], sp[i+1])['id'])
 
@@ -55,6 +54,17 @@ def shortest_path(nx_graph, s, t):
 
     return sp, path
 
+def get_subgraph(nx_graph, sp, radius):
+    for i in range(radius):
+        subgraph = []
+        for point in sp:
+            point_neighbors = list(nx_graph.neighbors(point))
+            for j in range(len(point_neighbors)):
+                if point_neighbors[j] not in subgraph:
+                    subgraph.append(point_neighbors[j])
+        print(subgraph)
+        sp = subgraph
+
 if __name__ == '__main__':
     nodes, ways = parser('ncku.osm')
     nx_graph = converter(nodes, ways)
@@ -62,4 +72,5 @@ if __name__ == '__main__':
     target = random.choice(list(nx_graph))
     sp, path = shortest_path(nx_graph, source, target)
     render(nodes, ways, sp, path)
+    get_subgraph(nx_graph, sp, 2)
 
