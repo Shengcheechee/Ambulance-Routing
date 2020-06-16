@@ -44,20 +44,20 @@ def shortest_path(nx_graph, s, t):
     path_ids = []
     path_edges = []
 
-    for i in range(len(sp)-1):
-        path_ids.append(nx_graph.get_edge_data(sp[i], sp[i + 1])['id'])
-        path_edges.append((sp[i], sp[i + 1]))
+    for i in range(len(sp_nodes)-1):
+        path_ids.append(nx_graph.get_edge_data(sp_nodes[i], sp_nodes[i + 1])['id'])
+        path_edges.append((sp_nodes[i], sp_nodes[i + 1]))
 
-    print("Source node id : ", sp[0])
-    print("Target node id : ", sp[-1])
-    print("Shortest path node ids: ", sp)
-    print("Shortest path way ids : ", path)
+    print("Source node id : ", sp_nodes[0])
+    print("Target node id : ", sp_nodes[-1])
+    print("Shortest path node ids: ", sp_nodes)
+    print("Shortest path way ids : ", path_ids)
 
     return sp_nodes, path_ids, path_edges
 
 def get_subgraph(nx_graph, edge):
-    graph_1 = nx_graph.ego_graph(nx_graph, edge[0], radius = 5)
-    graph_2 = nx_graph.ego_graph(nx_graph, edge[1], radius = 5)
+    graph_1 = nx.ego_graph(nx_graph, edge[0], radius = 5)
+    graph_2 = nx.ego_graph(nx_graph, edge[1], radius = 5)
     subgraph = nx.compose(graph_1, graph_2)
 
     return subgraph
@@ -69,6 +69,6 @@ if __name__ == '__main__':
     target = random.choice(list(nx_graph))
     sp_nodes, path_ids, path_edges = shortest_path(nx_graph, source, target)
     subgraphs = []
-    for edge in edges:
+    for edge in path_edges:
         subgraphs.append(get_subgraph(nx_graph, edge))
     render(nodes, ways, sp_nodes, path_ids)
