@@ -11,7 +11,7 @@ def converter(nodes, ways):
             graph_nodes.append(node)
 
     osm_graph = nx.DiGraph()
-    osm_graph.add_nodes_from (graph_nodes)
+    osm_graph.add_nodes_from(graph_nodes)
     for way in ways.keys():
         nd_tmp = ""
         for nd in ways[way][0]:
@@ -72,4 +72,3 @@ if __name__ == '__main__':
     for edge in edges:
         subgraphs.append(get_subgraph(nx_graph, edge))
     render(nodes, ways, sp_nodes, path_ids)
-
