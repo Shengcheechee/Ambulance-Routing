@@ -28,7 +28,6 @@ def parser(filename):
         way_mem = []
         lane = 1
         priority = ""
-        way_name = ""
 
         for tag in way.findall('tag'):
             if (tag.get('k') == "highway" and tag.get('v') not in {"path", "footway", "steps", "pedestrian"}):
