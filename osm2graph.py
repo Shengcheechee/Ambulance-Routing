@@ -12,32 +12,26 @@ def convert2graph(nodes, ways):
 
     for way in ways.keys():
         nd_tmp = ""
-        for nd in ways[way][0]:
+        for nd in ways[way]['way_member']:
             if nd in list(osm_graph):
-                if ways[way][2] == 1:
+                if ways[way]['oneway']:
                     if nd_tmp == "":
                         nd_tmp = nd
                     else:
-                        osm_graph.add_edge(nd_tmp, nd, id = way, lane = ways[way][1], priority = ways[way][3])
-                        nd_tmp = nd
-                elif ways[way][2] == -1:
-                    if nd_tmp == "":
-                        nd_tmp = nd
-                    else:
-                        osm_graph.add_edge(nd, nd_tmp, id = way, lane = ways[way][1], priority = ways[way][3])
+                        osm_graph.add_edge(nd_tmp, nd, id = way, lane = ways[way]['lane'], priority = ways[way]['priority'])
                         nd_tmp = nd
                 else:
                     if nd_tmp == "":
                         nd_tmp = nd
                     else:
-                        osm_graph.add_edge(nd_tmp, nd, id = way, lane = ways[way][1], priority = ways[way][3])
-                        osm_graph.add_edge(nd, nd_tmp, id = way, lane = ways[way][1], priority = ways[way][3])
+                        osm_graph.add_edge(nd_tmp, nd, id = way, lane = ways[way]['lane'], priority = ways[way]['priority'])
+                        osm_graph.add_edge(nd, nd_tmp, id = way, lane = ways[way]['lane'], priority = ways[way]['priority'])
                         nd_tmp = nd
 
     return osm_graph
 
-def shortest_path(nx_graph, s, t):
-    sp_nodes = nx.shortest_path(nx_graph, source = s, target = t)
+def shortest_path(nx_graph, src, tgt):
+    sp_nodes = nx.shortest_path(nx_graph, source = src, target = tgt)
 
     path_ids = []
     path_edges = []
