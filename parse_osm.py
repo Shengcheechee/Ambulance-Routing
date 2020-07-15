@@ -14,11 +14,7 @@ def parser(filename):
         lon = float(node.get('lon'))
         lat = int(lat * 100000 + 0.5)
         lon = int(lon * 100000 + 0.5)
-
-        trafsig = False
-        if node.find('tag') != None and node.find('tag').get('v') == "traffic_signals":
-                trafsig = True
-
+        trafsig = node.find('tag') != None and node.find('tag').get('v') == "traffic_signals"
         node_info = {
             'position': (lon, lat),
             'trafsig': trafsig,
@@ -44,6 +40,7 @@ def parser(filename):
             if tag.get('k') == "lanes":
                 lane = int(tag.get('v'))
 
+            #! why not just inverse way_member
             if tag.get('k') == "oneway":
                 if tag.get('v') == "yes":
                     oneway = 1
@@ -51,10 +48,22 @@ def parser(filename):
                     oneway = -1
 
         if way_mem:
+            #! Use dict
             ways[way.get('id')] = (way_mem, lane, oneway, priority)
 
     return nodes, ways
 
+def gen_affine(x_min, y_max):
+    def affine(node):
+        return (node['position'][0] - x_min, y_max - node['position'][1])
+    return affine
+
+#! variable name sp and path should be more clear. It is really hard to tell
+#! meaning from variable name.
+# shortest_path = {
+#     "nodes": [...],
+#     "edges": [...],
+# }
 def render(nodes, ways, sp, path):
     lon_min_id = min(nodes.keys(), key = lambda nid: nodes[nid]['position'][0])
     lon_max_id = max(nodes.keys(), key = lambda nid: nodes[nid]['position'][0])
@@ -81,29 +90,30 @@ def render(nodes, ways, sp, path):
 
             else:
                 if ways[way][2] == 1:
-                    cv2.line(img, (nodes[nd_tmp]['position'][0] - x_min, y_max - nodes[nd_tmp]['position'][1]), (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), (200, 0, 0), ways[way][1])
+                    cv2.line(img, affine(nodes[nd_tmp]), affine(nodes[nd]), (200,   0,   0), ways[way][1])
                 elif ways[way][2] == -1:
-                    cv2.line(img, (nodes[nd_tmp]['position'][0] - x_min, y_max - nodes[nd_tmp]['position'][1]), (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), (0, 200, 0), ways[way][1])
+                    cv2.line(img, affine(nodes[nd_tmp]), affine(nodes[nd]), (  0, 200,   0), ways[way][1])
                 else:
-                    cv2.line(img, (nodes[nd_tmp]['position'][0] - x_min, y_max - nodes[nd_tmp]['position'][1]), (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), (150, 150, 150), ways[way][1])
+                    cv2.line(img, affine(nodes[nd_tmp]), affine(nodes[nd]), (150, 150, 150), ways[way][1])
                 nd_tmp = nd
 
-            cv2.circle(img, (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), 2, (0, 0, 0), -1)
+            cv2.circle(img, affine(nodes[nd]), 2, (0, 0, 0), -1)
 
             if nodes[nd]['trafsig'] == True:
-                cv2.circle(img, (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), 4, (0, 0, 255), 2)
+                cv2.circle(img, affine(nodes[nd]), 4, (0, 0, 255), 2)
 
             if len(nodes[nd]['belonged_ways']) > 1:
                 if nd in sp:
-                    cv2.circle(img, (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), 6, (0, 200, 200), 2)
+                    cv2.circle(img, affine(nodes[nd]), 6, (0, 200, 200), 2)
                     cv2.putText(img, nd, (nodes[nd]['position'][0] - x_min + 1, y_max - nodes[nd]['position'][1] + 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 128, 128), 1, cv2.LINE_AA)
                 else:
-                    cv2.circle(img, (nodes[nd]['position'][0] - x_min, y_max - nodes[nd]['position'][1]), 6, (200, 200, 0), 2)
+                    cv2.circle(img, affine(nodes[nd]), 6, (200, 200, 0), 2)
 
 
     for i in range(len(path)):
         shortest_path = []
 
+        #! the if-else here is unnecessary after inversion.
         if ways[path[i]][0].index(sp[i + 1]) > ways[path[i]][0].index(sp[i]):
             shortest_path = ways[path[i]][0][ways[path[i]][0].index(sp[i]) : ways[path[i]][0].index(sp[i + 1]) + 1]
         else:
@@ -111,12 +121,8 @@ def render(nodes, ways, sp, path):
 
         sh_pa_tmp = ""
 
-        for sh_pa in shortest_path:
-            if sh_pa_tmp == "":
-                sh_pa_tmp = sh_pa
-            else:
-                cv2.line(img, (nodes[sh_pa_tmp]['position'][0] - x_min, y_max - nodes[sh_pa_tmp]['position'][1]), (nodes[sh_pa]['position'][0] - x_min, y_max - nodes[sh_pa]['position'][1]), (0, 0, 200), ways[path[i]][1])
-                sh_pa_tmp = sh_pa
+        for j in range(len(shortest_path) - 1):
+            cv2.line(img, affine(nodes[shortest_path[j]]), affine(nodes[shortest_path[j+1]]), (0, 0, 200), ways[path[i]][1])
 
     cv2.imwrite('My_map.jpg', img)
 
