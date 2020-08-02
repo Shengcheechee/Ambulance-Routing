@@ -1,4 +1,3 @@
-import gym
 import math
 import random
 import numpy as np
@@ -54,7 +53,7 @@ class DQN(object):
         if np.random.uniform() < self.epsilon: # random choose one number from [0, 1)
             action = np.random.randint(0, self.n_action) # random choose one integer from [0, n_action)
         # according to current policy, choose the best action
-        esle:
+        else:
             action_value = self.evaluation_net(x) # get score(action_value) for each action
             action = torch.max(action_value, 1)[1].data.numpy()[0] # pick the action which score is the highest
         return action
