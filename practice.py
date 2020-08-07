@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 # Q(n1_state, n_action) = n1_reward
 class TNetwork(nn.Module):
-    def __init__(self, n1_state, n_action):
+    def __init__(self, n1_state, n1_action):
         super(target_net, self).__init__() # nn.Module.__init__()
         self.conv = nn.Conv2d(n1_state, 16, kernel_size=5, stride=1)
         self.bn1 = nn.BatchNorm2d(16)
@@ -41,20 +41,13 @@ class DQN(object):
         self.evaluation_net = ENetwork(n0_state, n_action)
 
         self.buffer_counter = 0
+        self.loss_function = nn.MSELoss()
 
         self.n_action = n_action
         self.buffer_capacity = buffer_capacity
         self.batch_size = batch_size
 
     # choose one action which has the maximum reward
-    def choose_action(self, state):
-        rewards = []
-        for a in n_action:
-            reward = evaluation_net(state, a)
-            rewards.append(reward)
-        best_action = n_action[np.argmax(rewards)]
-        return best_action
-
     def choose_action(self, state):
         reward = evaluation_net(state, n_action)
         best_action = n_action[np.argmax(reward)]
@@ -68,20 +61,18 @@ class DQN(object):
 
     def run(self):
         # random choose batch_size experiences from buffer
-        sample_index = np.random.choice(self.buffer_capacity, self.batch_size, replace=False).tolist()
-        batch_memory, batch_state, batch_action, batch_reward, batch_next_state = [], [], [], [], []
-        for i in sample_index:
-            batch_memary.append(memory[i])
-            # batch_state.append(memory[i][0])
-            QEvaluation = self.evaluation_net(memory[i][0])
-            # batch_next_state.append(memory[i][3])
-            QNext = self.target_net(memory[i][3])
-            QNextMax = QNext[np.argmax(QNext)]
-            # batch_reward.append(memory[i][2])
-            QTarget = QNextMax + memory[i][2]
-            # batch_action.append(memory[i][1])
-            # batch_reward.append(memory[i][2])
+        state, action, reward, next_state = # function call
+        # Evaluation_Qvalue = Q(st, at)
+        Evaluation_Qvalue = self.evaluation_net(state, action)
+        # V(st+1, at+1) = maxQ(st+1, a)
+        V_next_state = self.target_net(next_state, n_action)
+        V_max_next_state = V_next_state[np.argmax(V_next_state)]
+        # Target_Qvalue = V(st+1, at+1) + reward
+        Target_Qvalue = V_max_next_state + reward
+        # calculate loss between Evaluation_Qvalue and Target_Qvalue
+        loss = self.loss_function(Evaluation_Qvalue, Target_Qvalue)
 
+        # backpropagation
 
 
 
