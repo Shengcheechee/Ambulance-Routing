@@ -5,9 +5,8 @@ if 'SUMO_HOME' in os.environ:
     sys.path.append(tools)
 else:
     sys.exit("please declare environmentvariable 'SUMO_HOME'")
-import traci
-import sumolib
 
+import traci
 import xml.etree.ElementTree as ET
 import cv2
 import networkx as nx
