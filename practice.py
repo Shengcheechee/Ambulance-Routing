@@ -17,9 +17,12 @@ class TNetwork(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.bn1(self.conv(x)))
-        n1_reward = self.out(x.view(x.size(0), -1))
+        n1_reward = self.out(x.view(x.size(0), -1)) # [a0, a1, a2, a3]
+        # softmax
+        exp_n1 = np.exp(n1_reward)
+        softmax_n1 = exp_n1 / np.sum(exp_n1)
 
-    return n1_reward # [a0, a1, a2, a3]
+    return softmax_n1
 
 # Q(n0_state, n_action) = n0_reward
 class ENetwork(nn.Module):
@@ -31,17 +34,21 @@ class ENetwork(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.bn1(self.conv(x)))
-        n0_reward = self.out(x.view(x.size(0), -1))
+        n0_reward = self.out(x.view(x.size(0), -1)) # [a0, a1, a2, a3]
+        # softmax
+        exp_n0 = np.exp(n0_reward)
+        softmax_n0 = exp_n0 / np.sum(exp_n0)
 
-    return n0_reward # [a0, a1, a2, a3]
+    return softmax_n0
 
 class DQN(object):
-    def __init__(self, n_action, buffer_capacity, batch_size):
+    def __init__(self, n_action, batch_size, buffer_capacity):
         self.targrt_net = TNetwork(n1_state, n_action)
         self.evaluation_net = ENetwork(n0_state, n_action)
 
         self.buffer_counter = 0
         self.loss_function = nn.MSELoss()
+        self.optimizer = torch.optim.Adam(self.evaluation_net.parameters())
 
         self.n_action = n_action
         self.buffer_capacity = buffer_capacity
@@ -73,6 +80,10 @@ class DQN(object):
         loss = self.loss_function(Evaluation_Qvalue, Target_Qvalue)
 
         # backpropagation
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
 
 
 
