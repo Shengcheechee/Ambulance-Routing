@@ -28,6 +28,7 @@ def parser(filename):
         way_mem = []
         lane = 1
         priority = ""
+        oneway = False
 
         for tag in way.findall('tag'):
             if (tag.get('k') == "highway" and tag.get('v') not in {"path", "footway", "steps", "pedestrian"}):
@@ -51,8 +52,6 @@ def parser(filename):
                 oneway =  tag.get('v') == "yes" or tag.get('v') == "-1"
                 if tag.get('v') == "-1":
                     way_mem.reverse()
-            else:
-                oneway = False
 
         if way_mem:
             ways[way.get('id')] = {
@@ -116,16 +115,21 @@ def render(nodes, ways, sp_nodes, path_ids, subgraphs):
                     cv2.circle(img, affine(nodes[nd]), 6, (200, 200, 0), 2)
 
     for i in range(len(path_ids)):
-        shortest_path_ids = ways[path_ids[i]]['way_member'][ways[path_ids[i]]['way_member'].index(sp_nodes[i]) : ways[path_ids[i]]['way_member'].index(sp_nodes[i + 1]) + 1]
+        start = min(ways[path_ids[i]]['way_member'].index(sp_nodes[i]), ways[path_ids[i]]['way_member'].index(sp_nodes[i + 1]))
+        end = max(ways[path_ids[i]]['way_member'].index(sp_nodes[i]), ways[path_ids[i]]['way_member'].index(sp_nodes[i + 1]))
+        shortest_path_ids = ways[path_ids[i]]['way_member'][start : end + 1]
         for j in range(len(shortest_path_ids) - 1):
             cv2.line(img, affine(nodes[shortest_path_ids[j]]), affine(nodes[shortest_path_ids[j + 1]]), (0, 0, 200), ways[path_ids[i]]['lane'])
 
+    cv2.imwrite('tmp.jpg', img)
+
     count = 0
     for subgraph in subgraphs:
+        img_ = cv2.imread('tmp.jpg')
         for sg_nd in list(subgraph):
-            cv2.circle(img, (nodes[sg_nd]['position'][0] - x_min, y_max - nodes[sg_nd]['position'][1]), 10, (200, 0, 200), 2)
-            cv2.putText(img, sg_nd, (nodes[sg_nd]['position'][0] - x_min + 1, y_max - nodes[sg_nd]['position'][1] + 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 128, 128), 1, cv2.LINE_AA)
-        cv2.imwrite('My_map_%d.jpg'%(count), img)
+            cv2.circle(img_, affine(nodes[sg_nd]), 10, (200, 0, 200), 2)
+            cv2.putText(img_, sg_nd, (nodes[sg_nd]['position'][0] - x_min + 1, y_max - nodes[sg_nd]['position'][1] + 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 128, 128), 1, cv2.LINE_AA)
+            cv2.imwrite('My_map_%d.jpg'%(count), img_)
         count += 1
 
     return x_min, y_max
