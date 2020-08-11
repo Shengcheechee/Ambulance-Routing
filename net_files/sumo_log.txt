@@ -1,0 +1,7 @@
+***Starting server on port 60211 ***
+Loading net-file from '/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml' ... done (981ms).
+Loading additional-files from '/home/sheng/git/Ambulance-Routing/net_files/ncku.poly.xml' ... done (95ms).
+Loading done.
+Simulation version v1_6_0+0899-45db7f4775 started with time: 0.00
+Error: tcpip::Socket::recvAndCheck @ recv: peer shutdown
+Quitting (on error).
