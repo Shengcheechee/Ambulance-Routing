@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 import math
 import numpy as np
 import torch
@@ -6,8 +9,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 import practice.py
 
-env = # environment
 
+env = # environment
 # environment parameters
 n_action = [0, 1, 2 ,3]
 n_state = np.zeros((batch_size, 32, 32))
@@ -21,16 +24,16 @@ dqn = DQN(n_action, batch_size, buffer_capacity)
 # machine learning
 for i_episode in range(n_episode):
     rewards = 0
-    state = ### env.reset()
+    state = env.reset()
     while True:
         # choose one action
         action = dqn.choose_action(state)
-        next_state, reward, done = ### env.step(action)
+        next_state, reward, done = env.step(action)
         # save experience
         dqn.buffer(state, action, reward, next_state)
         # accumulate reward
         rewards += reward
-        if dqn.memory_counter > buffer_capacity:
+        if dqn.buffer_counter > buffer_capacity:
             dqn.run()
         state = next_state
 
