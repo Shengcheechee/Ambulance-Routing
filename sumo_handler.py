@@ -66,7 +66,8 @@ def get_sumo_info(netfile, osm_graph):
     edges = {}
     for edge in root.findall('edge'):
         sumo_graph.add_edge(edge.get('from'), edge.get('to'), id = edge.get('id'))
-        edges[edge.get('id').split("#")[0]] = []
+        if edge.get('from'):
+            edges[str(abs(int(edge.get('id').split("#")[0])))] = []
 
     found = False
     tmp = ""
@@ -76,12 +77,17 @@ def get_sumo_info(netfile, osm_graph):
 
     for node in list(osm_graph):
         for edge in edges_info:
-            if edge[2].split("#")[0] != tmp and tmp:
+            if edge[2].split("#")[0][0] == '-':
+                continue
+            else:
+                edge_id = edge[2].split("#")[0]
+
+            if edge_id != tmp and tmp:
                 found = False
                 path = []
 
             if edge[0] == node:
-                tmp = edge[2].split("#")[0]
+                tmp = edge_id
                 found = True
                 path = [node]
 
@@ -93,7 +99,7 @@ def get_sumo_info(netfile, osm_graph):
                 found = False
                 path.append(edge[1])
                 path = tuple(path)
-                edges[edge[2].split("#")[0]].append(path)
+                edges[edge_id].append(path)
 
     return sumo_graph, edges
 
@@ -106,14 +112,20 @@ def get_generateRoute(sumo_graph):
 
 def	addCar(route):
 	traci.route.add(routeID="newRoute", edges=route)
-	traci.vehicle.add(vehID = "ambulance", routeID = route, typeID = "Amb")
-	traci.vehicle.setVehicleClass(vehID = "ambulance", clazz = "emergency")
+	traci.vehicle.add(vehID = "ambulance", routeID = "newRoute")
+	traci.vehicle.setVehicleClass(vehID = "ambulance", clazz = "ignoring")
 
 def get_find_neighbor_nodes(edges):
     def find_neighbor_nodes(path):
-        for edge in edges.keys():
-            if path in edges[edge]:
-                return edges[edge][0], edges[edge][-1]
+        edge_id = str(abs(int(path.split("#")[0])))
+        path = edge_id + "#" + path.split("#")[1] if len(path.split("#")[1]) > 1 else edge_id
+
+        for i in range(len(edges[edge_id])):
+            if path in edges[edge_id][i]:
+                return edges[edge_id][i][0], edges[edge_id][i][-1]
+            else:
+                pass
+
     return find_neighbor_nodes
 
 class env(object):
@@ -124,46 +136,57 @@ class env(object):
         self.count = 0
 
     def reset(self):
-        addCar(self.routes[count])
-        self.start_time = traci.simulation.getTime
-        n1, n2 = find_neighbor_nodes(self.routes[count][0])
-        state = gnn(get_subgraph(self.graph, n1. n2))
+        addCar(self.routes[self.count])
+        print(traci.vehicle.getRoadID("ambulance"))
+        print(traci.vehicle.getIDList())
+        traci.simulationStep()
+        print(traci.vehicle.getRoadID("ambulance"))
+        print(traci.vehicle.getIDList())
+        traci.simulationStep()
+        print(traci.vehicle.getRoadID("ambulance"))
+        self.start_time = traci.simulation.getTime()
+        n1, n2 = find_neighbor_nodes(self.routes[self.count][0])
+        self.subgraph = get_subgraph(self.graph, n1, n2)
+        state = gnn(self.subgraph)
         return state
 
     def step(self, action):
         def perform_action(action):
             if action == 1:
-                for node in nx_graph:
-                    if nx.get_node_attributes(nx_graph, 'trafsig')[node]:
-                        traci.trafficlight.setRedYellowGreenState(node, 'GGGG')
-
+                # for node in self.subgraph:
+                #     if nx.get_node_attributes(self.subgraph, 'trafsig')[node]:
+                #         print(traci.trafficlight.getCompleteRedYellowGreenDefinition(node))
+                #         traci.trafficlight.setPhase(node, )
+                pass
             elif action == 2:
-                for node in nx_graph:
-                    if nx.get_node_attributes(nx_graph, 'trafsig')[node]:
-                        traci.trafficlight.setRedYellowGreenState(node, 'RRRR')
-
+                # for node in self.subgraph:
+                #     if nx.get_node_attributes(self.subgraph, 'trafsig')[node]:
+                #         traci.trafficlight.setPhase(node, )
+                pass
             elif action == 3:
-                for node in nx_graph:
-                    if nx.get_node_attributes(nx_graph, 'trafsig')[node]:
-                        traci.trafficlight.setRedYellowGreenState(node, 'GGGGGGYyRR')
-
+                # for node in self.subgraph:
+                #     if nx.get_node_attributes(self.subgraph, 'trafsig')[node]:
+                #         traci.trafficlight.setPhase(node, )
+                pass
             elif action == 4:
-                for node in nx_graph:
-                    if nx.get_node_attributes(nx_graph, 'trafsig')[node]:
-                        traci.trafficlight.setRedYellowGreenState(node, 'RRRRRRGGYy')
-
+                # for node in self.subgraph:
+                #     if nx.get_node_attributes(self.subgraph, 'trafsig')[node]:
+                #         traci.trafficlight.setPhase(node, )
+                pass
             else:
                 pass
 
         def get_reward():
             travel_time = traci.simulation.getTime() - self.start_time
             lane_vehicles_number = traci.lane.getLastStepVehicleNumber(traci.vehicle.getLaneID("ambulance"))
-            reward = 5 - lan_vehicle_number
+            reward = 5 - lane_vehicles_number
             return reward
 
         def get_next_state():
-            n1, n2 = find_neighbor_nodes(traci.vehicle.getRoadID())
-            state = gnn(get_subgraph(self.graph, n1. n2))
+            print(traci.vehicle.getRoute("ambulance"))
+            print(traci.vehicle.getLaneID("ambulance"))
+            n1, n2 = find_neighbor_nodes(traci.vehicle.getRoadID("ambulance"))
+            state = gnn(get_subgraph(self.graph, n1, n2))
             return state
 
         def check_done():
@@ -183,11 +206,23 @@ class env(object):
 
 
 if __name__ == '__main__':
-    nodes, ways = parser('ncku.osm')
+    nodes, ways = parser('/home/sheng/git/Ambulance-Routing/net_files/ncku.osm')
     osm_graph = convert2graph(nodes, ways)
     source = "5520434289"
     target = "355961064"
-    sumo_graph, edges = get_sumo_info('ncku.net.xml', osm_graph)
+    sumo_graph, edges = get_sumo_info('/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml', osm_graph)
+    find_neighbor_nodes = get_find_neighbor_nodes(edges)
     generateRoute = get_generateRoute(sumo_graph)
-    route = generateRoute(source, target)
+    route = [f'-111343192#{i}' for i in range(11, 0, -1)]
+    # route = generateRoute(source, target)
     print("The route is :", route)
+    routes = [route]
+    traci.start(['/home/sheng/git/sumo/bin/sumo', '-c', '/home/sheng/git/Ambulance-Routing/net_files/run.sumo.cfg'])
+    rl_env = env(osm_graph, routes)
+    s = rl_env.reset()
+    n_s, r, d = rl_env.step(1)
+    print("s :", s)
+    print("n_s :", n_s)
+    print("r :", r)
+    print("d :", d)
+    traci.close()
