@@ -1,15 +1,15 @@
-***Starting server on port 52531 ***
-Loading net-file from '/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml' ... done (1016ms).
-Loading additional-files from '/home/sheng/git/Ambulance-Routing/net_files/ncku.poly.xml' ... done (96ms).
+***Starting server on port 33891 ***
+Loading net-file from '/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml' ... done (1095ms).
+Loading additional-files from '/home/sheng/git/Ambulance-Routing/net_files/ncku.poly.xml' ... done (103ms).
 Loading done.
 Simulation version v1_6_0+0899-45db7f4775 started with time: 0.00
-Loading state from 'now' ... done (25ms).
+Loading state from 'now' ... done (36ms).
 Simulation ended at time: 1.00
 Reason: TraCI requested termination.
 Performance: 
- Duration: 310ms
- Real time factor: 3.22581
- UPS: 16.129032
+ Duration: 346ms
+ Real time factor: 2.89017
+ UPS: 14.450867
 Vehicles: 
  Inserted: 2 (Loaded: 3)
  Running: 2
