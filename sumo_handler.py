@@ -239,13 +239,10 @@ if __name__ == '__main__':
     osm_graph = convert2graph(nodes, ways)
     source = random.choice(list(osm_graph))
     target = random.choice(list(osm_graph))
-    # source = "5520434289"
-    # target = "355961064"
     sumo_graph, edges, connections, tls = get_sumo_info('/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml', osm_graph)
     find_neighbor_nodes = get_find_neighbor_nodes(edges, connections)
     generateRoute = get_generateRoute(sumo_graph)
-    route = [f"-111343192#{i}" for i in range(11, 0, -1)]
-    # route = generateRoute(source, target)
+    route = generateRoute(source, target)
     print("The route is :", route)
     routes = [route]
     traci.start(['/home/sheng/git/sumo/bin/sumo', '-c', '/home/sheng/git/Ambulance-Routing/net_files/run.sumo.cfg'])
