@@ -31,7 +31,7 @@ def parser(filename):
         oneway = False
 
         for tag in way.findall('tag'):
-            if (tag.get('k') == "highway" and tag.get('v') not in {"path", "footway", "steps", "pedestrian"}):
+            if (tag.get('k') == "highway" and tag.get('v') not in ["path", "footway", "steps", "pedestrian"]):
                 if tag.get('v') == "primary":
                     priority = 10
                 elif tag.get('v') == "secondary":
