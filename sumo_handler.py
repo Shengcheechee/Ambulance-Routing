@@ -1,11 +1,10 @@
 #!/usr/local/bin/python3
 import os, sys
 import xml.etree.ElementTree as ET
-import cv2
 import networkx as nx
 import numpy as np
 import random
-from parse_osm import parser, render
+from parse_osm import parser
 from osm2graph import convert2graph, shortest_path, get_subgraph
 
 if 'SUMO_HOME' in os.environ:
@@ -16,48 +15,13 @@ else:
 
 import traci
 
-# def relu(x):
-#     return np.maximum(x, 0)
-#
-# def layer(A, D, F):
-#     return relu(D ** -1 * A * F)
-#
-def weighted_function(node, nx_graph, A):
-    weight = 0
-    trafsig = nx.get_node_attributes(nx_graph, 'trafsig')
-
-    if trafsig[node]:
-        weight = weight + 1000
-    for nd in A[node].keys():
-        weight = weight + A[node][nd]['weight']
-
-    return weight
-#
-# def gnn(nx_graph):
-#     A = nx.to_dict_of_dicts(nx_graph)
-#     A_ = sorted(A, key = lambda nd: weighted_function(nd, nx_graph, A), reverse = True)
-#     sorted_A = nx.to_numpy_matrix(nx_graph, nodelist = A_)
-#     I = np.eye(nx_graph.number_of_nodes())
-#     A_self = sorted_A + I
-#
-#     D_array = np.array(np.sum(A_self, axis = 1)).reshape(-1)
-#     D = np.matrix(np.diag(D_array))
-#
-#     F = []
-#     for node in A_:
-#         F.append([int(nx.get_node_attributes(nx_graph, 'trafsig')[node])])
-#
-#     H_1 = layer(A_self, D, F)
-#     H_2 = layer(A_self, D, H_1)
-#
-#     return H_2
-
 def get_adjmtx(nx_graph):
-    A = nx.to_dict_of_dicts(nx_graph)
-    A_ = sorted(A, key = lambda nd: weighted_function(nd, nx_graph, A), reverse = True)
-    sorted_A = nx.to_numpy_matrix(nx_graph, nodelist = A_)
+    A = nx.to_numpy_matrix(nx_graph)
     I = np.eye(nx_graph.number_of_nodes())
-    A_self = sorted_A + I
+    A_self = A + I
+
+    # cut the adjancency matrix to the shape of 32x32
+    # and return 32 x 32 matrix as state
 
     if len(A_self) >= 32:
         adjmtx = A_self[: 32, : 32]
@@ -70,34 +34,51 @@ def get_adjmtx(nx_graph):
 
     return adjmtx
 
-def replay_buffer(self, state, action, reward, next_state):
-
-    transition = np.hstack((state, [action, reward], next_state))
-
-    index = self.memory_cuounter % self.memory_capacity
-    self.memory[index, :] = transition
-    self.memory_counter += 1
-
 def get_sumo_info(netfile, osm_graph):
     root = ET.parse(netfile).getroot()
     sumo_graph = nx.DiGraph()
 
+    # mapping the sumo_graph edges to the osm_graph edges
+    # edges = {
+    #     "edge_id_in_osm": [(junction_A, edge_id_in_sumo_1, edge_id_in_sumo_2, junction_B),
+    #                        (junction_C, edge_id_in_sumo_3, junction_D), ...]
+    #     ...
+    # }
+
     edges = {}
     for edge in root.findall('edge'):
+
+        # create sumo_graph
         if edge.get('type') and edge.get('type').split(".")[1] not in ["path", "footway", "steps", "pedestrian"]:
             sumo_graph.add_edge(edge.get('from'), edge.get('to'), id = edge.get('id'))
+
+        # create a dict only has keys of osm_edge_ids without considering direction
         if edge.get('from'):
             edges[str(abs(int(edge.get('id').split("#")[0])))] = []
+
+    # when a car running on sumo simulation, there are some internal edges between edges
+    # connections = {
+    #     "internal_edge_id_1": (edge_id_in_sumo_1, edge_id_in_sumo_2),
+    #     "internal_edge_id_2": (edge_id_in_sumo_3, edge_id_in_sumo_4),
+    #     ...
+    # }
 
     connections = {}
     for connection in root.findall('connection'):
         if connection.get('via'):
             connections[connection.get('via').rsplit('_', 1)[0]] = (connection.get('from'), connection.get('to'))
 
+    # when we want to set the state of traffic light
+    # we need to get the number of 'rgy' in state and fit it
+    # tls = {
+    #     "tl_id": number_of_'rgy'
+    # }
+
     tls = {}
     for tl in root.findall('tlLogic'):
         tls[tl.get('id')] = len(tl.find('phase').get('state'))
 
+    # complete the edges dict
     found = False
     tmp = ""
     edges_info = list(sumo_graph.edges.data('id'))
@@ -162,6 +143,8 @@ def get_find_neighbor_nodes(edges, connections):
 
     return find_neighbor_nodes
 
+
+# create the environment that rl model needs
 class env(object):
     def __init__(self, osm_graph, routes, tls):
         self.graph = osm_graph
