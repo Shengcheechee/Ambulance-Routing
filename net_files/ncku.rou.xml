@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on Mon Aug 17 00:28:32 2020 by Eclipse SUMO duarouter Version v1_6_0+0899-45db7f4775
+<!-- generated on Wed Aug 19 11:39:43 2020 by Eclipse SUMO duarouter Version v1_6_0+0899-45db7f4775
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
@@ -28,7 +28,10 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vehicle id="0" depart="0.00">
+
+    <!-- <vType id="emgcy" vClass="emergency"/> -->
+
+	<vehicle id="0" depart="0.00">
         <route edges="302241611#1 302241611#2 302241611#3 302241611#4 302241611#5 302241611#6 520547195#0 520547195#1 520547195#2 520547195#3 520547195#4 -313194340#2 -313194340#1 -313194340#0 -313194339 -315702598#2 -315702598#1 -315702598#0 -228022792#6 -228022792#5 -228022792#4 -228022792#3 -228022792#2 -228022792#1 -228022792#0 72871344 72871329#2 72871329#3 72871329#4 72871329#5 436251058 159315419 496249898#0 -81509012#0 496249903#0 -152086640#4 -152086640#3 -152086640#2 -152086640#1"/>
     </vehicle>
     <vehicle id="1" depart="1.00">
