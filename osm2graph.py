@@ -37,9 +37,9 @@ def shortest_path(nx_graph, src, tgt):
     for i in range(len(sp_nodes)-1):
         path_ids.append(nx_graph.get_edge_data(sp_nodes[i], sp_nodes[i + 1])['id'])
 
-    print("Source node id : ", sp_nodes[0])
-    print("Target node id : ", sp_nodes[-1])
-    print("Shortest path node ids: ", sp_nodes)
+    # print("Source node id : ", sp_nodes[0])
+    # print("Target node id : ", sp_nodes[-1])
+    # print("Shortest path node ids: ", sp_nodes)
 
     return path_ids
 
