@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 import networkx as nx
 import numpy as np
 import random
+import torch
 from parse_osm import parser
 from osm2graph import convert2graph, shortest_path, get_subgraph
 
@@ -45,11 +46,27 @@ def get_sumo_info(netfile, osm_graph):
     #     ...
     # }
 
+    restriction = {
+        "living_street",
+        "primary",
+        "primary_link",
+        "residential",
+        "secondary",
+        "secondary_link",
+        "service",
+        "tertiary",
+        "tertiary_link",
+        "trunk",
+        "trunk_link",
+        "unclassified",
+        "unsurfaced"
+    }
+
     edges = {}
     for edge in root.findall('edge'):
 
         # create sumo_graph
-        if edge.get('type') and edge.get('type').split(".")[1] not in ["path", "footway", "steps", "pedestrian"]:
+        if edge.get('type') and edge.get('type').split(".")[1] in restriction:
             sumo_graph.add_edge(edge.get('from'), edge.get('to'), id = edge.get('id'))
 
         # create a dict only has keys of osm_edge_ids without considering direction
@@ -123,7 +140,8 @@ def get_generateRoute(sumo_graph):
 def	addCar(route):
 	traci.route.add(routeID="newRoute", edges=route)
 	traci.vehicle.add(vehID = "ambulance", routeID = "newRoute")
-	traci.vehicle.setVehicleClass(vehID = "ambulance", clazz = "ignoring")
+	# traci.vehicle.setVehicleClass(vehID = "ambulance", clazz = "ignoring")
+	# traci.vehicle.setVehicleClass(vehID = "ambulance", clazz = "emergency")
 
 def get_find_neighbor_nodes(edges, connections):
     def find_neighbor_nodes(path):
@@ -150,6 +168,7 @@ class env(object):
         self.graph = osm_graph
         self.routes = routes
         self.n_actions = 4
+        self.state_shape = 32
         self.tls = tls
         self.count = 0
 
@@ -160,6 +179,9 @@ class env(object):
         n1, n2 = find_neighbor_nodes(self.routes[self.count][0])
         self.subgraph = get_subgraph(self.graph, n1, n2)
         state = get_adjmtx(self.subgraph)
+        state = np.asarray(state)
+        state = torch.from_numpy(state).float()
+        state = state.unsqueeze(0).unsqueeze(0)
         return state
 
     def step(self, action):
@@ -199,34 +221,63 @@ class env(object):
         def get_next_state():
             n1, n2 = find_neighbor_nodes(traci.vehicle.getRoadID("ambulance"))
             state = get_adjmtx(get_subgraph(self.graph, n1, n2))
+            state = np.asarray(state)
+            state = torch.from_numpy(state).float()
+            state = state.unsqueeze(0).unsqueeze(0)
             return state
 
         def check_done():
-            self.count += 1
-            return "ambulance" in traci.simulation.getArrivedIDList()
+            if "ambulance" in traci.simulation.getArrivedIDList():
+                self.count += 1
+                return True
+            else:
+                return False
 
         perform_action(action)
-        done = check_done()
+        traci.simulationStep()
         reward = get_reward()
 
         traci.simulation.saveState('now')
         traci.simulationStep()
         next_state = get_next_state()
+        done = check_done()
         traci.simulation.loadState('now')
 
         return next_state, reward, done
 
+    def start(self):
+        addCar(self.routes[self.count])
+        traci.simulationStep()
+        self.start_time = traci.simulation.getTime()
+
+    def random_step(self):
+        traci.simulationStep()
+        travel_time = traci.simulation.getTime() - self.start_time
+        if "ambulance" in traci.simulation.getArrivedIDList():
+            self.count += 1
+            return True, travel_time
+        else:
+            return False, travel_time
+
+
+nodes, ways = parser('/home/sheng/git/Ambulance-Routing/net_files/ncku.osm')
+osm_graph = convert2graph(nodes, ways)
+sumo_graph, edges, connections, tls = get_sumo_info('/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml', osm_graph)
+find_neighbor_nodes = get_find_neighbor_nodes(edges, connections)
+generateRoute = get_generateRoute(sumo_graph)
 
 if __name__ == '__main__':
     nodes, ways = parser('/home/sheng/git/Ambulance-Routing/net_files/ncku.osm')
     osm_graph = convert2graph(nodes, ways)
+    # source = "307351699"
+    # target = "165031123"
     source = random.choice(list(osm_graph))
     target = random.choice(list(osm_graph))
     sumo_graph, edges, connections, tls = get_sumo_info('/home/sheng/git/Ambulance-Routing/net_files/ncku.net.xml', osm_graph)
     find_neighbor_nodes = get_find_neighbor_nodes(edges, connections)
     generateRoute = get_generateRoute(sumo_graph)
     route = generateRoute(source, target)
-    print("The route is :", route)
+    # print("The route is :", route)
     routes = [route]
     traci.start(['/home/sheng/git/sumo/bin/sumo', '-c', '/home/sheng/git/Ambulance-Routing/net_files/run.sumo.cfg'])
     rl_env = env(osm_graph, routes, tls)
